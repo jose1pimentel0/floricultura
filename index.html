@@ -139,18 +139,29 @@
       </div><!-- /hero-content -->
 
 
-      <video width="320" height="240" controls>
-  <source src="lirio-video.mp4" type="video/mp4">
- 
-  Your browser does not support the video tag.
-</video>
       <!-- Scroll indicator -->
       <div class="hero-scroll-hint" aria-hidden="true">
         <span>Role para descobrir</span>
         <div class="scroll-line"></div>
       </div>
+
+
+      
  
-    </div><!-- /hero-sticky -->
+    </div>
+    <div style="height: 300vh;">
+    <div id="scrolly-video"></div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/scrolly-video@latest/dist/scrolly-video.js"></script>
+  <script type="text/javascript">
+    new ScrollyVideo({
+      scrollyVideoContainer: "scrolly-video",
+      src: "lirio-video.mp4"
+    });
+  </script>
+    
+    <!-- /hero-sticky -->
  
     <!-- ═══════════════════════════════════════════════
          RED TRIGGER DIVIDERS
