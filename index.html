@@ -47,101 +47,36 @@
        animations
   ═══════════════════════════════════════════════ -->
   <div class="hero-wrapper" id="hero-wrapper">
- 
-    <!-- Sticky container — stays pinned at top:0 during scroll -->
-    <div class="hero-sticky" id="hero-sticky">
- 
-      <!-- Video container — swap src for FFMPEG-optimized .mp4 -->
-      <div class="hero-video-container">
-        <video
-          class="hero-video"
-          id="hero-video"
-          autoplay
-          muted
-          loop
-          playsinline
-          preload="auto"
-          poster="poster.jpg"
-          aria-label="Lírios em movimento suave"
-        >
-          <!--
-            FFMPEG INTEGRATION NOTE:
-            Replace the src below with your optimized video file.
-            Recommended FFMPEG command for web-optimized output:
-            
-            ffmpeg -i input.mp4 \
-              -vf "scale=1920:-2,fps=24" \
-              -c:v libx264 -crf 23 -preset slow \
-              -profile:v high -level 4.0 \
-              -movflags +faststart \
-              -an output.mp4
-            
-            Also generate a WebM fallback:
-            ffmpeg -i input.mp4 \
-              -vf "scale=1920:-2,fps=24" \
-              -c:v libvpx-vp9 -crf 33 -b:v 0 \
-              -an output.webm
-          -->
-          <source src="hero-lily.webm" type="video/webm" />
-          <source src="hero-lily.mp4" type="video/mp4" />
-        </video>
- 
-        <!-- Multi-layer gradient overlay for text legibility -->
-        <div class="hero-overlay"></div>
- 
-        <!-- Decorative botanical line art -->
-        <div class="hero-ornament hero-ornament--left" aria-hidden="true">
-          <svg viewBox="0 0 60 400" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <line x1="30" y1="0" x2="30" y2="400" stroke="rgba(255,245,240,0.25)" stroke-width="0.5"/>
-            <ellipse cx="30" cy="100" rx="18" ry="8" stroke="rgba(255,245,240,0.2)" stroke-width="0.5" transform="rotate(-20 30 100)"/>
-            <ellipse cx="30" cy="200" rx="14" ry="6" stroke="rgba(255,245,240,0.15)" stroke-width="0.5" transform="rotate(15 30 200)"/>
-            <ellipse cx="30" cy="300" rx="16" ry="7" stroke="rgba(255,245,240,0.2)" stroke-width="0.5" transform="rotate(-10 30 300)"/>
-          </svg>
-        </div>
-        <div class="hero-ornament hero-ornament--right" aria-hidden="true">
-          <svg viewBox="0 0 60 400" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <line x1="30" y1="0" x2="30" y2="400" stroke="rgba(255,245,240,0.25)" stroke-width="0.5"/>
-            <ellipse cx="30" cy="150" rx="16" ry="7" stroke="rgba(255,245,240,0.2)" stroke-width="0.5" transform="rotate(20 30 150)"/>
-            <ellipse cx="30" cy="260" rx="18" ry="8" stroke="rgba(255,245,240,0.15)" stroke-width="0.5" transform="rotate(-15 30 260)"/>
-          </svg>
-        </div>
- 
-      </div><!-- /hero-video-container -->
- 
-      <!-- Hero content layers — each animated by Red Trigger -->
-      <div class="hero-content" id="hero-content">
- 
-        <!-- Layer 1: eyebrow (triggered first) -->
-        <p class="hero-eyebrow red-reveal" id="hero-eyebrow">
-          <span class="eyebrow-line"></span>
-          Atelier de Flores Premium
-          <span class="eyebrow-line"></span>
-        </p>
- 
-        <!-- Layer 2: main headline (triggered second) -->
-        <h1 class="hero-headline red-reveal" id="hero-headline">
-          <span class="headline-line">A Beleza</span>
-          <em class="headline-italic">que perdura</em>
-        </h1>
- 
-        <!-- Layer 3: subtext (triggered third) -->
-        <p class="hero-sub red-reveal" id="hero-sub">
-          Arranjos florais de luxo, criados com precisão artesanal<br />
-          para momentos que merecem ser imortalizados.
-        </p>
- 
-        <!-- Layer 4: CTA (triggered fourth) -->
-        <div class="hero-cta red-reveal" id="hero-cta">
-          <a href="#catalog" class="btn-primary">Explorar Coleção</a>
-          <a href="#about" class="btn-text">Nosso Atelier ↓</a>
-        </div>
- 
-      </div><!-- /hero-content -->
+  <div class="hero-sticky" id="hero-sticky">
+    <div class="hero-video-container">
+      <video
+        class="hero-video"
+        id="hero-video"
+        muted
+        playsinline
+        preload="auto"
+      >
+        <source src="lirio_otimizado.mp4" type="video/mp4" />
+      </video>
+      <div class="hero-overlay"></div>
+    </div>
 
+    <div class="hero-content">
+      <p class="hero-eyebrow red-reveal" id="hero-eyebrow">Atelier de Flores Premium</p>
+      <h1 class="hero-headline red-reveal" id="hero-headline">
+        <span class="headline-line">A Beleza</span>
+        <em class="headline-italic">que perdura</em>
+      </h1>
+      <div class="hero-cta red-reveal" id="hero-cta">
+        <a href="#catalog" class="btn-primary">Explorar Coleção</a>
+      </div>
+    </div>
+  </div>
 
-      <!-- Scroll indicator -->
-      <div class="hero-scroll-hint" aria-hidden="true">
-        <span>Role para descobrir</span>
+  <div class="red-trigger" data-target="hero-eyebrow" style="top: 10vh"></div>
+  <div class="red-trigger" data-target="hero-headline" style="top: 40vh"></div>
+  <div class="red-trigger" data-target="hero-cta" style="top: 70vh"></div>
+</div>
         <div class="scroll-line"></div>
       </div>
 
