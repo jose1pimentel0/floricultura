@@ -32,106 +32,118 @@
     </button>
   </nav>
 
-  <!-- ═══════════════════════════════════════════════
-       HERO SECTION — STICKY SCROLL
-       
-       HOW THE STICKY SCROLL WORKS:
-       The `.hero-wrapper` has a tall height (300vh) which creates
-       a long scroll "runway." Inside it, `.hero-sticky` is set to
-       `position: sticky; top: 0; height: 100vh` — this pins the
-       visual frame in place while the page scrolls beneath it.
-       
-       The JS IntersectionObserver watches invisible `.red-trigger`
-       dividers placed at intervals within the wrapper. As each
-       divider crosses the viewport threshold, it fires entrance
-       animations on text elements, creating the illusion that
-       scrolling "controls" what you see.
-  ═══════════════════════════════════════════════ -->
+  <!-- ═══════════════════════════════════════════════════════════
+       HERO SECTION — SCROLL-DRIVEN VIDEO (ARQUITETURA ANTIGRAVITY)
+
+       COMO FUNCIONA O STICKY + SCRUB:
+       ┌─ hero-wrapper (500vh) ──────────────────────────────────┐
+       │  Cria a "pista de rolagem" — espaço em branco que       │
+       │  o navegador percorre enquanto a tela permanece travada. │
+       │                                                          │
+       │  ┌─ hero-sticky (position:sticky; height:100vh) ──────┐ │
+       │  │  Fica preso no topo da viewport enquanto o usuário  │ │
+       │  │  rola dentro dos 500vh do wrapper.                  │ │
+       │  │                                                      │ │
+       │  │  O JS mapeia scrollY → video.currentTime,           │ │
+       │  │  sincronizando frame a frame.                        │ │
+       │  └────────────────────────────────────────────────────┘ │
+       │                                                          │
+       │  ── RED TRIGGERS (divs absolutas invisíveis) ─────────  │
+       │  Sentinelas posicionadas na pista. Quando entram na     │
+       │  viewport, disparam animações nos textos do Hero.        │
+       └──────────────────────────────────────────────────────────┘
+
+       ENCODE DO VÍDEO PARA SCRUBBING PERFEITO:
+       Keyframe a cada frame (essencial para seek preciso):
+         ffmpeg -i lirio-video.mp4 \
+           -vf "scale=1920:-2,fps=30" \
+           -c:v libx264 -crf 18 -preset slow \
+           -g 1 -keyint_min 1 \
+           -profile:v high -level 4.0 \
+           -movflags +faststart \
+           -an lirio-scrub.mp4
+  ═══════════════════════════════════════════════════════════ -->
   <div class="hero-wrapper" id="hero-wrapper">
 
-    <!-- Sticky container — stays pinned at top:0 during scroll -->
+    <!-- Sticky frame — travado no topo durante toda a rolagem -->
     <div class="hero-sticky" id="hero-sticky">
 
-      <!-- Video container — swap src for FFMPEG-optimized .mp4 -->
+      <!-- ── VÍDEO CONTROLADO POR SCROLL ────────────────────
+           - SEM autoplay / loop: o JS controla currentTime
+           - preload="auto": pré-carrega para scrubbing suave
+           - playsinline: necessário em iOS para não abrir fullscreen
+           - muted: obrigatório para navegadores permitirem seek sem gesto
+      ──────────────────────────────────────────────────────── -->
       <div class="hero-video-container">
         <video
           class="hero-video"
           id="hero-video"
-          autoplay
           muted
-          loop
           playsinline
           preload="auto"
-          poster="poster.jpg"
-          aria-label="Lírios em movimento suave"
+          aria-label="Lírio se desdobrando — controlado pelo scroll"
         >
           <!--
-            FFMPEG INTEGRATION NOTE:
-            Replace the src below with your optimized video file.
-            Recommended FFMPEG command for web-optimized output:
-            
-            ffmpeg -i input.mp4 \
-              -vf "scale=1920:-2,fps=24" \
-              -c:v libx264 -crf 23 -preset slow \
-              -profile:v high -level 4.0 \
-              -movflags +faststart \
-              -an output.mp4
-            
-            Also generate a WebM fallback:
-            ffmpeg -i input.mp4 \
-              -vf "scale=1920:-2,fps=24" \
-              -c:v libvpx-vp9 -crf 33 -b:v 0 \
-              -an output.webm
+            FONTE PRINCIPAL: lirio-video.mp4
+            Coloque o arquivo na mesma pasta do index.html.
+            O navegador irá escolher automaticamente o formato suportado.
           -->
-          <source src="hero-lily.webm" type="video/webm" />
-          <source src="hero-lily.mp4" type="video/mp4" />
+          <source src="lirio-video.mp4" type="video/mp4" />
+
+          <!-- Fallback para navegadores sem suporte a vídeo HTML5 -->
+          <p>Seu navegador não suporta vídeo HTML5.</p>
         </video>
 
-        <!-- Multi-layer gradient overlay for text legibility -->
-        <div class="hero-overlay"></div>
+        <!-- ── GRADIENTE MULTICAMADA para legibilidade dos textos brancos -->
+        <!-- Camada 1: escurece bordas e garante contraste nas laterais -->
+        <div class="hero-overlay hero-overlay--vignette"></div>
+        <!-- Camada 2: gradiente vertical — escuro no topo e rodapé -->
+        <div class="hero-overlay hero-overlay--gradient"></div>
+        <!-- Camada 3: véu sutil no centro para o texto principal -->
+        <div class="hero-overlay hero-overlay--center"></div>
 
-        <!-- Decorative botanical line art -->
+        <!-- Ornamentos botânicos laterais -->
         <div class="hero-ornament hero-ornament--left" aria-hidden="true">
           <svg viewBox="0 0 60 400" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <line x1="30" y1="0" x2="30" y2="400" stroke="rgba(255,245,240,0.25)" stroke-width="0.5"/>
-            <ellipse cx="30" cy="100" rx="18" ry="8" stroke="rgba(255,245,240,0.2)" stroke-width="0.5" transform="rotate(-20 30 100)"/>
-            <ellipse cx="30" cy="200" rx="14" ry="6" stroke="rgba(255,245,240,0.15)" stroke-width="0.5" transform="rotate(15 30 200)"/>
-            <ellipse cx="30" cy="300" rx="16" ry="7" stroke="rgba(255,245,240,0.2)" stroke-width="0.5" transform="rotate(-10 30 300)"/>
+            <line x1="30" y1="0" x2="30" y2="400" stroke="rgba(255,245,240,0.22)" stroke-width="0.5"/>
+            <ellipse cx="30" cy="100" rx="18" ry="8" stroke="rgba(255,245,240,0.18)" stroke-width="0.5" transform="rotate(-20 30 100)"/>
+            <ellipse cx="30" cy="200" rx="14" ry="6" stroke="rgba(255,245,240,0.13)" stroke-width="0.5" transform="rotate(15 30 200)"/>
+            <ellipse cx="30" cy="300" rx="16" ry="7" stroke="rgba(255,245,240,0.18)" stroke-width="0.5" transform="rotate(-10 30 300)"/>
           </svg>
         </div>
         <div class="hero-ornament hero-ornament--right" aria-hidden="true">
           <svg viewBox="0 0 60 400" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <line x1="30" y1="0" x2="30" y2="400" stroke="rgba(255,245,240,0.25)" stroke-width="0.5"/>
-            <ellipse cx="30" cy="150" rx="16" ry="7" stroke="rgba(255,245,240,0.2)" stroke-width="0.5" transform="rotate(20 30 150)"/>
-            <ellipse cx="30" cy="260" rx="18" ry="8" stroke="rgba(255,245,240,0.15)" stroke-width="0.5" transform="rotate(-15 30 260)"/>
+            <line x1="30" y1="0" x2="30" y2="400" stroke="rgba(255,245,240,0.22)" stroke-width="0.5"/>
+            <ellipse cx="30" cy="150" rx="16" ry="7" stroke="rgba(255,245,240,0.18)" stroke-width="0.5" transform="rotate(20 30 150)"/>
+            <ellipse cx="30" cy="260" rx="18" ry="8" stroke="rgba(255,245,240,0.13)" stroke-width="0.5" transform="rotate(-15 30 260)"/>
           </svg>
         </div>
 
       </div><!-- /hero-video-container -->
 
-      <!-- Hero content layers — each animated by Red Trigger -->
+      <!-- ── CONTEÚDO TEXTUAL — animado pelo Red Trigger ─── -->
       <div class="hero-content" id="hero-content">
 
-        <!-- Layer 1: eyebrow (triggered first) -->
+        <!-- Fase 1: eyebrow — aparece quando o Red Trigger #1 entra na viewport -->
         <p class="hero-eyebrow red-reveal" id="hero-eyebrow">
           <span class="eyebrow-line"></span>
           Atelier de Flores Premium
           <span class="eyebrow-line"></span>
         </p>
 
-        <!-- Layer 2: main headline (triggered second) -->
+        <!-- Fase 2: headline principal -->
         <h1 class="hero-headline red-reveal" id="hero-headline">
           <span class="headline-line">A Beleza</span>
           <em class="headline-italic">que perdura</em>
         </h1>
 
-        <!-- Layer 3: subtext (triggered third) -->
+        <!-- Fase 3: subtexto editorial -->
         <p class="hero-sub red-reveal" id="hero-sub">
           Arranjos florais de luxo, criados com precisão artesanal<br />
           para momentos que merecem ser imortalizados.
         </p>
 
-        <!-- Layer 4: CTA (triggered fourth) -->
+        <!-- Fase 4: chamada para ação -->
         <div class="hero-cta red-reveal" id="hero-cta">
           <a href="#catalog" class="btn-primary">Explorar Coleção</a>
           <a href="#about" class="btn-text">Nosso Atelier ↓</a>
@@ -139,31 +151,55 @@
 
       </div><!-- /hero-content -->
 
-      <!-- Scroll indicator -->
-      <div class="hero-scroll-hint" aria-hidden="true">
-        <span>Role para descobrir</span>
+      <!-- Indicador de progresso lateral — espelha o currentTime do vídeo -->
+      <div class="hero-progress" id="hero-progress" aria-hidden="true">
+        <div class="hero-progress__track">
+          <div class="hero-progress__fill" id="hero-progress-fill"></div>
+        </div>
+        <span class="hero-progress__label" id="hero-progress-label">0%</span>
+      </div>
+
+      <!-- Hint de scroll — desaparece ao começar a rolar -->
+      <div class="hero-scroll-hint" id="hero-scroll-hint" aria-hidden="true">
+        <span>Role para revelar</span>
         <div class="scroll-line"></div>
       </div>
 
     </div><!-- /hero-sticky -->
 
-    <!-- ═══════════════════════════════════════════════
-         RED TRIGGER DIVIDERS
+    <!-- ═══════════════════════════════════════════════════════
+         RED TRIGGER DIVIDERS — GATILHOS VERMELHOS
          
-         These invisible sentinel elements are positioned at
-         equal intervals throughout the hero-wrapper's scroll
-         runway. The IntersectionObserver in script.js watches
-         them. When each crosses the 10% threshold of the
-         viewport, it dispatches a custom event that animates
-         the corresponding hero content layer.
+         Divs absolutas invisíveis distribuídas na pista de 500vh.
+         O IntersectionObserver em script.js as monitora.
          
-         The name "Red Trigger" refers to the invisible trigger
-         points — place as many as needed, naming them by index.
-    ═══════════════════════════════════════════════ -->
-    <div class="red-trigger" data-target="hero-eyebrow" data-delay="0"    style="top: 5vh"   aria-hidden="true"></div>
-    <div class="red-trigger" data-target="hero-headline" data-delay="150" style="top: 25vh"  aria-hidden="true"></div>
-    <div class="red-trigger" data-target="hero-sub"      data-delay="300" style="top: 50vh"  aria-hidden="true"></div>
-    <div class="red-trigger" data-target="hero-cta"      data-delay="450" style="top: 75vh"  aria-hidden="true"></div>
+         Quando cada sentinela cruza a viewport, ela dispara a
+         animação do elemento correspondente via data-target (ID).
+         data-delay define o atraso em ms após o disparo.
+         
+         Para adicionar novos gatilhos:
+           <div class="red-trigger"
+                data-target="ID_DO_ELEMENTO"
+                data-delay="600"
+                style="top: 200vh"
+                aria-hidden="true">
+           </div>
+         
+         Para depurar — descomente em style.css:
+           .red-trigger { background: rgba(255,0,0,0.4); }
+    ═══════════════════════════════════════════════════════ -->
+
+    <!-- Fase 1 → eyebrow aparece logo ao entrar no wrapper -->
+    <div class="red-trigger" data-target="hero-eyebrow"  data-delay="0"   style="top: 2vh"   aria-hidden="true"></div>
+
+    <!-- Fase 2 → headline após ~20% do scroll do wrapper -->
+    <div class="red-trigger" data-target="hero-headline" data-delay="120" style="top: 60vh"  aria-hidden="true"></div>
+
+    <!-- Fase 3 → subtexto após ~50% do scroll do wrapper -->
+    <div class="red-trigger" data-target="hero-sub"      data-delay="0"   style="top: 150vh" aria-hidden="true"></div>
+
+    <!-- Fase 4 → CTA no trecho final da desconstrução do lírio -->
+    <div class="red-trigger" data-target="hero-cta"      data-delay="200" style="top: 300vh" aria-hidden="true"></div>
 
   </div><!-- /hero-wrapper -->
 
