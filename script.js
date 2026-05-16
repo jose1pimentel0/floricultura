@@ -1,252 +1,424 @@
 /**
+ * ═══════════════════════════════════════════════════════════
  * FLORICULTURA MAH — SCRIPT.JS
- * Handles:
- *  1. Sticky hero + Red Trigger entrance animations
- *  2. Catalog card & section scroll reveals
- *  3. Navigation scroll state
- *  4. Optional: video scrubbing via scrollY (commented out)
+ * Arquitetura Antigravity: Scroll-Driven Video Scrubbing
+ * ═══════════════════════════════════════════════════════════
+ *
+ * MÓDULOS:
+ *  1. Video Scrub Engine   — mapeia scrollY → video.currentTime
+ *  2. Red Trigger System   — IntersectionObserver nas sentinelas
+ *  3. Navigation State     — nav transparente → frosted ao rolar
+ *  4. Scroll Reveal        — cards e seções entram com animação
+ *  5. Scroll Hint          — esconde o hint ao começar a rolar
+ *  6. Hamburger            — menu mobile
+ *
+ * ─── CALIBRAÇÃO DO SCRUBBING ────────────────────────────────
+ *
+ * A sincronização funciona assim:
+ *
+ *   scrollProgress = (scrollY - wrapperTop) / (wrapperHeight - viewportHeight)
+ *   video.currentTime = scrollProgress * video.duration
+ *
+ * Isso garante que:
+ *   - scroll em 0%  → frame 0 do vídeo (lírio inteiro)
+ *   - scroll em 50% → meio do vídeo (lírio parcialmente desmontado)
+ *   - scroll em 100% → último frame (lírio completamente aberto/fechado)
+ *
+ * O vídeo deve ser encodado com -g 1 (keyframe a cada frame)
+ * para que o seek seja imediato, sem artefatos de decodificação.
+ *
+ * ─── PERFORMANCE ────────────────────────────────────────────
+ *
+ * Usamos requestAnimationFrame (rAF) em vez de ouvir 'scroll'
+ * diretamente. O loop de rAF roda a ~60fps e lê o scrollY
+ * mais recente, evitando janks e desenfileiramento de eventos.
+ *
+ * A variável `targetTime` armazena o tempo desejado e
+ * `displayTime` faz lerp (interpolação linear) suave
+ * até o target, criando a fluidez "hand-crafted".
  */
 
 'use strict';
 
-/* ═══════════════════════════════════════════════════════
-   1. RED TRIGGER MECHANISM
+/* ═══════════════════════════════════════════════════════════
+   1. VIDEO SCRUB ENGINE
+   ═══════════════════════════════════════════════════════════ */
+
+/**
+ * CONFIGURAÇÃO DO SCRUB
+ * Ajuste aqui para calibrar o comportamento sem mexer na lógica.
+ */
+var SCRUB_CONFIG = {
+  /**
+   * Velocidade do lerp (interpolação suave).
+   * 0.0 = ultra suave (lento para acompanhar o scroll)
+   * 1.0 = sem lerp (instantâneo, mais seco)
+   * 0.08–0.12 = sweet spot para sensação "hand-controlled"
+   */
+  lerpFactor: 0.10,
+
+  /**
+   * Tolerância mínima para atualizar currentTime.
+   * Evita writes desnecessários no elemento de vídeo.
+   * Valor em segundos.
+   */
+  seekThreshold: 0.016, // ~1 frame a 60fps
+
+  /**
+   * Porcentagem do wrapper que é "ativa" para o scrub.
+   * 0.0–1.0. Ex: 0.9 = últimos 10% do wrapper pausam no último frame.
+   */
+  activeRange: 1.0,
+};
+
+function initVideoScrub() {
+  var wrapper       = document.getElementById('hero-wrapper');
+  var video         = document.getElementById('hero-video');
+  var progressEl    = document.getElementById('hero-progress');
+  var progressFill  = document.getElementById('hero-progress-fill');
+  var progressLabel = document.getElementById('hero-progress-label');
+
+  if (!wrapper || !video) return;
+
+  // Estado interno do engine
+  var targetTime     = 0;   // currentTime desejado (mapeado do scroll)
+  var displayTime    = 0;   // currentTime atual com lerp aplicado
+  var rafId          = null;
+  var videoDuration  = 0;
+  var isEngineActive = false;
+
+  // ── Aguarda metadados do vídeo (necessário para .duration) ──────
+  function onVideoReady() {
+    videoDuration = video.duration;
+
+    if (!videoDuration || isNaN(videoDuration)) {
+      // Tenta novamente quando os metadados chegarem
+      video.addEventListener('loadedmetadata', onVideoReady, { once: true });
+      return;
+    }
+
+    // Pausa: o scroll controla a reprodução, não o autoplay
+    video.pause();
+    video.currentTime = 0;
+
+    startEngine();
+  }
+
+  if (video.readyState >= 1) {
+    onVideoReady(); // Metadados já disponíveis (cache)
+  } else {
+    video.addEventListener('loadedmetadata', onVideoReady, { once: true });
+  }
+
+  // ── Engine principal: loop de requestAnimationFrame ──────────────
+  //
+  // Por que rAF em vez de 'scroll' listener?
+  // O evento 'scroll' pode disparar várias vezes por frame
+  // ou ser engolido em momentum scroll em iOS.
+  // O rAF sincroniza com o repaint do navegador, garantindo
+  // que cada escrita em video.currentTime seja visual e eficiente.
+  //
+  function startEngine() {
+    isEngineActive = true;
+
+    function tick() {
+      if (!isEngineActive) return;
+      rafId = requestAnimationFrame(tick);
+
+      // ── Calcula posição do wrapper na viewport ─────────────────
+      var wrapperRect   = wrapper.getBoundingClientRect();
+      var wrapperHeight = wrapper.offsetHeight;
+      var viewH         = window.innerHeight;
+
+      // scrolled = pixels que o wrapper já ultrapassou o topo
+      var scrolled  = Math.max(0, -wrapperRect.top);
+      var maxScroll = wrapperHeight - viewH;
+
+      // progress: 0.0 = início da pista → 1.0 = fim da pista
+      var rawProgress = maxScroll > 0
+        ? Math.min(scrolled / maxScroll, 1)
+        : 0;
+
+      // Aplica activeRange (ex: 0.9 trava no último frame mais cedo)
+      var scrollProgress = Math.min(rawProgress / SCRUB_CONFIG.activeRange, 1.0);
+
+      // Tempo-alvo correspondente no vídeo
+      targetTime = scrollProgress * videoDuration;
+
+      // ── Lerp: interpolação suave entre displayTime e targetTime ─
+      //
+      // A fórmula é:  novo = atual + (alvo - atual) × fator
+      // Isso cria uma curva exponencial de aproximação:
+      //   frame 1:  60% da diferença percorrida
+      //   frame 5:  99.9% percorrida (usando fator 0.6)
+      //   com fator 0.10: suave, demora ~20 frames para convergir
+      //
+      var delta = targetTime - displayTime;
+      if (Math.abs(delta) > SCRUB_CONFIG.seekThreshold) {
+        displayTime += delta * SCRUB_CONFIG.lerpFactor;
+
+        // Garante que não ultrapasse os limites do vídeo
+        displayTime = Math.max(0, Math.min(displayTime, videoDuration));
+        video.currentTime = displayTime;
+      }
+
+      // ── Atualiza indicador de progresso lateral ────────────────
+      if (progressFill && progressLabel) {
+        var pct = (scrollProgress * 100).toFixed(1);
+        progressFill.style.height = pct + '%';
+        progressLabel.textContent = Math.round(scrollProgress * 100) + '%';
+
+        if (progressEl && scrollProgress > 0.01) {
+          progressEl.classList.add('is-active');
+        }
+      }
+    }
+
+    rafId = requestAnimationFrame(tick);
+  }
+
+  // ── Pausa o engine quando o wrapper sai da viewport ────────────
+  // Economia de bateria em mobile e quando o usuário está
+  // navegando nas seções abaixo do hero.
+  var wrapperObserver = new IntersectionObserver(
+    function(entries) {
+      var entry = entries[0];
+      isEngineActive = entry.isIntersecting;
+
+      if (isEngineActive && !rafId) {
+        startEngine();
+      } else if (!isEngineActive && rafId) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
+      }
+    },
+    { threshold: 0 }
+  );
+  wrapperObserver.observe(wrapper);
+}
+
+
+/* ═══════════════════════════════════════════════════════════
+   2. RED TRIGGER SYSTEM — GATILHOS VERMELHOS
+   ═══════════════════════════════════════════════════════════
    
-   How it works:
-   - `.red-trigger` elements are invisible dividers
-     positioned at specific `top` offsets inside `.hero-wrapper`.
-   - Because `.hero-sticky` is pinned (position:sticky), the
-     triggers move THROUGH the viewport as the user scrolls
-     the wrapper's 300vh runway.
-   - An IntersectionObserver watches each trigger. When a
-     trigger's top edge crosses 10% from the viewport top,
-     it fires `animateTarget()`, which finds the matching
-     hero element by its `data-target` ID and adds the
-     `.is-revealed` class after an optional `data-delay` ms.
+   COMO FUNCIONA:
    
-   To add a new trigger:
-     <div class="red-trigger" data-target="MY_ELEMENT_ID" data-delay="600" style="top:120vh"></div>
+   As `.red-trigger` são divs absolutas posicionadas na pista
+   de rolagem (hero-wrapper, 500vh). Como o hero-sticky está
+   travado no topo, essas divs "passam" pela viewport enquanto
+   o usuário rola, como um filme passando por uma janela fixa.
    
-   To remove an animation:
-     Remove the `.red-reveal` class from the HTML element.
-═══════════════════════════════════════════════════════ */
+   O IntersectionObserver monitora cada sentinela. Quando ela
+   cruza o limiar de rootMargin configurado, dispara a animação
+   do elemento identificado por `data-target` (ID no DOM),
+   com atraso opcional via `data-delay` (ms).
+   
+   COMO ADICIONAR NOVOS GATILHOS:
+   No HTML, dentro de .hero-wrapper:
+   
+     <div class="red-trigger"
+          data-target="ID_DO_ELEMENTO"
+          data-delay="200"
+          style="top: 200vh"
+          aria-hidden="true">
+     </div>
+   
+   DEPURAÇÃO: descomente em style.css:
+     .red-trigger { background: rgba(255,0,0,0.5) !important; height:4px !important; }
+*/
 
 function initRedTriggers() {
-  const triggers = document.querySelectorAll('.red-trigger');
+  var triggers = document.querySelectorAll('.red-trigger');
   if (!triggers.length) return;
 
-  const triggered = new Set(); // Prevent double-firing
+  // Set de IDs já revelados — cada gatilho dispara apenas uma vez
+  var fired = new Set();
 
-  const observer = new IntersectionObserver(
-    (entries) => {
-      entries.forEach((entry) => {
+  var observer = new IntersectionObserver(
+    function(entries) {
+      entries.forEach(function(entry) {
         if (!entry.isIntersecting) return;
 
-        const el = entry.target;
-        const targetId = el.dataset.target;
-        const delay    = parseInt(el.dataset.delay, 10) || 0;
+        var el       = entry.target;
+        var targetId = el.dataset.target;
+        var delay    = parseInt(el.dataset.delay, 10) || 0;
 
-        if (triggered.has(targetId)) return;
-        triggered.add(targetId);
+        // Ignora se já foi disparado (evita re-animação ao rolar de volta)
+        if (fired.has(targetId)) return;
+        fired.add(targetId);
 
-        animateTarget(targetId, delay);
+        revealElement(targetId, delay);
       });
     },
     {
-      // Fire when the trigger's top edge reaches 10% down from viewport top.
-      // Adjust threshold/rootMargin to fine-tune timing.
+      // rootMargin: '-5% 0px -85% 0px'
+      // O trigger dispara quando está entre 5% e 15% da viewport,
+      // ou seja, logo que entra pelo topo da tela.
+      rootMargin: '-5% 0px -85% 0px',
       threshold: 0,
-      rootMargin: '-10% 0px -80% 0px',
     }
   );
 
-  triggers.forEach((trigger) => observer.observe(trigger));
+  triggers.forEach(function(t) { observer.observe(t); });
 }
 
 /**
- * Adds `.is-revealed` to the element with the given ID.
- * The CSS transition on `.red-reveal` handles the visual animation.
+ * Adiciona `.is-revealed` ao elemento com o ID especificado.
+ * A transição CSS em `.red-reveal` executa a animação visual.
  *
- * @param {string} id      - The element's ID attribute
- * @param {number} delay   - Milliseconds to wait before revealing
+ * @param {string} id    - ID do elemento a animar
+ * @param {number} delay - Atraso em ms
  */
-function animateTarget(id, delay) {
-  const el = document.getElementById(id);
+function revealElement(id, delay) {
+  var el = document.getElementById(id);
   if (!el) return;
 
   if (delay > 0) {
-    setTimeout(() => el.classList.add('is-revealed'), delay);
+    setTimeout(function() { el.classList.add('is-revealed'); }, delay);
   } else {
     el.classList.add('is-revealed');
   }
 }
 
 
-/* ═══════════════════════════════════════════════════════
-   1b. IMMEDIATE HERO REVEAL (on page load)
+/* ═══════════════════════════════════════════════════════════
+   2b. ENTRADA CINEMATOGRÁFICA DO HERO (carga da página)
+   ═══════════════════════════════════════════════════════════
    
-   The very first trigger fires almost immediately (top:5vh).
-   But for a fast-loading page, we also trigger the eyebrow
-   directly on DOMContentLoaded so it doesn't require
-   scrolling to see anything.
-═══════════════════════════════════════════════════════ */
+   Revela eyebrow e headline imediatamente ao carregar,
+   sem depender de scroll. Os elementos restantes (sub e cta)
+   são controlados pelos Red Triggers posicionados
+   em pontos mais avançados da pista de scroll.
+*/
 
-function initHeroImmediate() {
-  // Stagger the initial reveals even without scrolling,
-  // so the hero isn't completely blank on load.
-  const initialOrder = [
-    { id: 'hero-eyebrow',  delay: 400  },
-    { id: 'hero-headline', delay: 700  },
-    { id: 'hero-sub',      delay: 1050 },
-    { id: 'hero-cta',      delay: 1350 },
-  ];
-
-  initialOrder.forEach(({ id, delay }) => animateTarget(id, delay));
+function initHeroEntrance() {
+  revealElement('hero-eyebrow',  600);
+  revealElement('hero-headline', 1050);
 }
 
 
-/* ═══════════════════════════════════════════════════════
-   2. NAVIGATION SCROLL STATE
-   
-   Adds `.scrolled` to `.nav` once the user scrolls past
-   the initial viewport, switching from transparent/light
-   to the opaque frosted-glass style.
-═══════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════
+   3. NAVIGATION SCROLL STATE
+   ═══════════════════════════════════════════════════════════ */
 
 function initNav() {
-  const nav = document.getElementById('nav');
+  var nav = document.getElementById('nav');
   if (!nav) return;
 
-  const updateNav = () => {
-    if (window.scrollY > window.innerHeight * 0.6) {
-      nav.classList.add('scrolled');
-    } else {
-      nav.classList.remove('scrolled');
-    }
-  };
+  // Ativa o estilo frosted quando sai da zona do hero
+  var threshold = window.innerHeight * 0.4;
 
-  window.addEventListener('scroll', updateNav, { passive: true });
-  updateNav(); // Run once on init
+  function update() {
+    nav.classList.toggle('scrolled', window.scrollY > threshold);
+  }
+
+  window.addEventListener('scroll', update, { passive: true });
+  update(); // estado inicial
 }
 
 
-/* ═══════════════════════════════════════════════════════
-   3. GENERAL SCROLL REVEAL
-   
-   Cards and section elements (`.card`, `.atelier__text`,
-   `.atelier__visual`) start invisible via CSS and are
-   revealed when they enter the viewport.
-═══════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════
+   4. SCROLL REVEAL — CATÁLOGO E SEÇÕES
+   ═══════════════════════════════════════════════════════════ */
 
 function initScrollReveal() {
-  const revealEls = document.querySelectorAll(
+  var els = document.querySelectorAll(
     '.card, .atelier__text, .atelier__visual'
   );
-  if (!revealEls.length) return;
+  if (!els.length) return;
 
-  const observer = new IntersectionObserver(
-    (entries) => {
-      entries.forEach((entry) => {
+  var observer = new IntersectionObserver(
+    function(entries) {
+      entries.forEach(function(entry) {
         if (entry.isIntersecting) {
           entry.target.classList.add('in-view');
-          observer.unobserve(entry.target); // Reveal once only
+          observer.unobserve(entry.target);
         }
       });
     },
-    {
-      threshold: 0.12,
-      rootMargin: '0px 0px -40px 0px',
-    }
+    { threshold: 0.12, rootMargin: '0px 0px -40px 0px' }
   );
 
-  revealEls.forEach((el) => observer.observe(el));
+  els.forEach(function(el) { observer.observe(el); });
 }
 
 
-/* ═══════════════════════════════════════════════════════
-   4. OPTIONAL: VIDEO SCRUBBING (Scroll-Controlled Playback)
-   
-   Uncomment this block if you want scrolling to CONTROL
-   the video's playback position rather than letting it loop.
-   
-   This creates the illusion that the user is "dragging"
-   the video through its frames by scrolling.
-   
-   Requirements:
-   - Remove `loop` and `autoplay` from the <video> tag
-   - Add `preload="auto"` (already present)
-   - The video should be short (3–8s) for best effect
-   
-   FFMPEG tip for scrubbing: encode with keyframes every frame:
-     ffmpeg -i input.mp4 -g 1 -vf fps=30 -crf 18 scrub.mp4
-═══════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════
+   5. SCROLL HINT — desaparece ao começar a rolar
+   ═══════════════════════════════════════════════════════════ */
 
-/*
-function initVideoScrub() {
-  const wrapper = document.getElementById('hero-wrapper');
-  const video   = document.getElementById('hero-video');
-  if (!wrapper || !video) return;
+function initScrollHint() {
+  var hint = document.getElementById('hero-scroll-hint');
+  if (!hint) return;
 
-  // Wait for video metadata so duration is known
-  video.addEventListener('loadedmetadata', () => {
-    const updateScrub = () => {
-      const wrapperRect   = wrapper.getBoundingClientRect();
-      const totalScroll   = wrapper.offsetHeight - window.innerHeight;
-      const scrolled      = Math.max(0, -wrapperRect.top);
-      const progress      = Math.min(scrolled / totalScroll, 1);
+  function hide() {
+    if (window.scrollY > 80) {
+      hint.classList.add('is-hidden');
+      window.removeEventListener('scroll', hide);
+    }
+  }
 
-      video.currentTime = progress * video.duration;
-    };
-
-    window.addEventListener('scroll', updateScrub, { passive: true });
-    updateScrub();
-  });
+  window.addEventListener('scroll', hide, { passive: true });
 }
-*/
 
 
-/* ═══════════════════════════════════════════════════════
-   5. MOBILE HAMBURGER (simple toggle)
-═══════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════
+   6. HAMBURGER MOBILE
+   ═══════════════════════════════════════════════════════════ */
 
 function initHamburger() {
-  const btn   = document.getElementById('hamburger');
-  const links = document.querySelector('.nav__links');
+  var btn   = document.getElementById('hamburger');
+  var links = document.querySelector('.nav__links');
   if (!btn || !links) return;
 
-  btn.addEventListener('click', () => {
-    const open = links.style.display === 'flex';
-    links.style.display = open ? '' : 'flex';
-    links.style.flexDirection = 'column';
-    links.style.position = 'absolute';
-    links.style.top = '100%';
-    links.style.left = '0';
-    links.style.right = '0';
-    links.style.background = 'rgba(42, 31, 28, 0.97)';
-    links.style.padding = '1.5rem 2rem';
-    links.style.gap = '1.5rem';
-    if (open) links.removeAttribute('style');
-    btn.setAttribute('aria-expanded', !open);
+  var isOpen = false;
+
+  btn.addEventListener('click', function() {
+    isOpen = !isOpen;
+    btn.setAttribute('aria-expanded', isOpen);
+
+    if (isOpen) {
+      links.style.cssText = [
+        'display: flex',
+        'flex-direction: column',
+        'position: absolute',
+        'top: 100%',
+        'left: 0',
+        'right: 0',
+        'background: rgba(10, 0, 8, 0.97)',
+        'padding: 1.5rem 2rem',
+        'gap: 1.5rem',
+        'backdrop-filter: blur(12px)',
+        'border-bottom: 1px solid rgba(196,122,155,0.2)',
+        'z-index: 99',
+      ].join('; ');
+    } else {
+      links.removeAttribute('style');
+    }
   });
 
-  // Close on link click
-  links.querySelectorAll('a').forEach((a) => {
-    a.addEventListener('click', () => links.removeAttribute('style'));
+  // Fecha ao clicar em qualquer link
+  links.querySelectorAll('a').forEach(function(a) {
+    a.addEventListener('click', function() {
+      isOpen = false;
+      links.removeAttribute('style');
+      btn.setAttribute('aria-expanded', false);
+    });
   });
 }
 
 
-/* ═══════════════════════════════════════════════════════
-   INIT
-═══════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════
+   INICIALIZAÇÃO — ordem importa
+   ═══════════════════════════════════════════════════════════ */
 
-document.addEventListener('DOMContentLoaded', () => {
-  initHeroImmediate();
-  initRedTriggers();
-  initNav();
-  initScrollReveal();
-  initHamburger();
-
-  // Uncomment if using scroll-controlled video:
-  // initVideoScrub();
+document.addEventListener('DOMContentLoaded', function() {
+  initVideoScrub();     // 1. Engine de vídeo — registra observer antes de qualquer scroll
+  initRedTriggers();    // 2. Sentinelas de animação na pista
+  initHeroEntrance();   // 3. Entrada cinematográfica na carga
+  initNav();            // 4. Estado da barra de navegação
+  initScrollReveal();   // 5. Reveal dos cards e seções abaixo
+  initScrollHint();     // 6. Hint de scroll
+  initHamburger();      // 7. Menu mobile
 });
