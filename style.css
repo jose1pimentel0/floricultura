@@ -264,29 +264,36 @@ button { cursor: pointer; border: none; background: none; font: inherit; }
 
 
 /* ═══════════════════════════════════════════════════════
-   HERO — STICKY SCROLL MECHANISM
+   HERO — SCROLL-DRIVEN VIDEO (ARQUITETURA ANTIGRAVITY)
    
-   EXPLANATION:
-   1. `.hero-wrapper` is the tall scroll container (300vh).
-      It provides the "runway" for the sticky effect.
-   2. `.hero-sticky` uses `position: sticky` and `height: 100vh`
-      to stay pinned to the viewport top as the user scrolls
-      through the wrapper's 300vh of space.
-   3. The video inside plays on loop. If you want scrolling to
-      CONTROL video time (scrubbing), replace the loop with JS
-      that maps `scrollY` to `video.currentTime`.
-   4. `.red-trigger` elements are `position: absolute` sentinels
-      inside the wrapper, observed by IntersectionObserver.
+   ESTRUTURA:
+   1. `.hero-wrapper` (500vh) = pista de rolagem.
+      O usuário percorre 4 viewports extras enquanto a tela
+      permanece visualmente travada.
+   
+   2. `.hero-sticky` (position:sticky; height:100vh) = frame
+      preso. Fica pregado no topo da viewport enquanto a
+      rolagem ocorre dentro da pista do wrapper.
+   
+   3. `.hero-video` = recebe currentTime do JS sincronizado
+      com scrollY. SEM autoplay, SEM loop.
+   
+   4. `.hero-overlay--*` = três camadas de gradiente para
+      garantir legibilidade total dos textos brancos.
+   
+   5. `.red-trigger` = sentinelas absolutas na pista que
+      disparam as animações de texto via IntersectionObserver.
 ═══════════════════════════════════════════════════════ */
 
-/* Long scroll runway — 300vh gives ~2 screens of scroll */
+/* ── Pista de rolagem: 500vh = ~4 telas de scroll ── */
+/* Aumente para mais tempo de desconstrução, diminua para menos */
 .hero-wrapper {
   position: relative;
-  height: 300vh;          /* STICKY RUNWAY: change to control duration */
+  height: 500vh;   /* RUNWAY — ajuste para calibrar duração da cena */
   z-index: 1;
 }
 
-/* The pinned visual frame */
+/* ── Frame travado ── */
 .hero-sticky {
   position: sticky;
   top: 0;
@@ -296,9 +303,10 @@ button { cursor: pointer; border: none; background: none; font: inherit; }
   display: flex;
   align-items: center;
   justify-content: center;
+  background: #0a0008; /* fallback enquanto o vídeo carrega */
 }
 
-/* ── Video layer ── */
+/* ── Camada do vídeo ── */
 .hero-video-container {
   position: absolute;
   inset: 0;
@@ -308,29 +316,66 @@ button { cursor: pointer; border: none; background: none; font: inherit; }
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center;
-  /* Slight scale-up to allow parallax feel without gaps */
-  transform: scale(1.04);
-  will-change: transform;
+  object-position: center 30%; /* ajuste o foco vertical do enquadramento */
+  /* Sem transform scale para não desperdiçar resolução no scrub */
+  will-change: auto; /* o navegador otimiza o seek do vídeo */
 }
 
-/* Multi-layer gradient overlay for text legibility */
+/* ── GRADIENTES MULTICAMADA — legibilidade dos textos ──
+   Três layers independentes permitem ajuste granular
+   sem interferência entre si.
+── */
+
+/* Camada base — sempre visível */
 .hero-overlay {
   position: absolute;
   inset: 0;
-  background: var(--overlay-hero);
-  /* Additional vignette */
-  box-shadow: inset 0 0 120px rgba(40, 8, 24, 0.3);
+  pointer-events: none;
 }
 
-/* Botanical line ornaments */
+/* CAMADA 1: Vinheta escura nas bordas — profundidade cinematográfica */
+.hero-overlay--vignette {
+  background: radial-gradient(
+    ellipse 120% 100% at 50% 50%,
+    transparent 35%,
+    rgba(20, 4, 14, 0.55) 70%,
+    rgba(10, 0, 8, 0.80) 100%
+  );
+  z-index: 1;
+}
+
+/* CAMADA 2: Gradiente vertical — escurece topo e rodapé */
+.hero-overlay--gradient {
+  background: linear-gradient(
+    to bottom,
+    rgba(10, 0, 8, 0.70)  0%,    /* topo escuro: nav legível */
+    rgba(10, 0, 8, 0.15)  25%,   /* claro para o vídeo respirar */
+    rgba(10, 0, 8, 0.10)  50%,   /* centro quase transparente  */
+    rgba(10, 0, 8, 0.20)  72%,   /* início do escurecimento    */
+    rgba(10, 0, 8, 0.72)  100%   /* rodapé escuro              */
+  );
+  z-index: 2;
+}
+
+/* CAMADA 3: Véu central suave — garante contraste do headline */
+.hero-overlay--center {
+  background: radial-gradient(
+    ellipse 70% 55% at 50% 52%,
+    rgba(40, 8, 24, 0.30) 0%,
+    transparent 100%
+  );
+  z-index: 3;
+}
+
+/* ── Ornamentos botânicos laterais ── */
 .hero-ornament {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
   width: 60px;
   height: 400px;
-  opacity: 0.6;
+  opacity: 0.5;
+  z-index: 4;
 }
 .hero-ornament--left  { left: 2rem; }
 .hero-ornament--right { right: 2rem; transform: translateY(-50%) scaleX(-1); }
@@ -338,17 +383,17 @@ button { cursor: pointer; border: none; background: none; font: inherit; }
   .hero-ornament { display: none; }
 }
 
-/* ── Content layer ── */
+/* ── Conteúdo textual ── */
 .hero-content {
   position: relative;
-  z-index: 2;
+  z-index: 5;
   text-align: center;
   padding: 2rem 1.5rem;
   max-width: 860px;
   width: 100%;
 }
 
-/* Eyebrow line */
+/* Eyebrow */
 .hero-eyebrow {
   display: flex;
   align-items: center;
@@ -360,6 +405,7 @@ button { cursor: pointer; border: none; background: none; font: inherit; }
   text-transform: uppercase;
   color: var(--color-blush-light);
   margin-bottom: 1.5rem;
+  text-shadow: 0 2px 12px rgba(10, 0, 8, 0.8);
 }
 .eyebrow-line {
   display: inline-block;
@@ -368,40 +414,40 @@ button { cursor: pointer; border: none; background: none; font: inherit; }
   opacity: 0.7;
 }
 
-/* Main headline */
+/* Headline */
 .hero-headline {
   font-family: var(--font-display);
   font-weight: 300;
-  line-height: 1.1;
+  line-height: 1.08;
   color: #fff;
   margin-bottom: 1.5rem;
-
   font-size: clamp(3.5rem, 9vw, 7.5rem);
-  text-shadow: 0 4px 40px rgba(40, 8, 24, 0.6);
+  text-shadow: 0 6px 50px rgba(10, 0, 8, 0.75),
+               0 2px 12px rgba(10, 0, 8, 0.5);
 }
-.headline-line {
-  display: block;
-}
+.headline-line { display: block; }
 .headline-italic {
   display: block;
   font-style: italic;
   font-weight: 300;
   color: var(--color-blush-light);
   font-size: 0.85em;
+  text-shadow: 0 4px 30px rgba(10, 0, 8, 0.6);
 }
 
-/* Subtext */
+/* Subtexto */
 .hero-sub {
   font-family: var(--font-display);
   font-size: clamp(1rem, 2.2vw, 1.3rem);
   font-weight: 300;
-  color: rgba(250, 246, 242, 0.82);
+  color: rgba(250, 246, 242, 0.88);
   line-height: 1.8;
   margin-bottom: 2.5rem;
   letter-spacing: 0.02em;
+  text-shadow: 0 3px 20px rgba(10, 0, 8, 0.7);
 }
 
-/* CTA group */
+/* CTA */
 .hero-cta {
   display: flex;
   align-items: center;
@@ -410,7 +456,54 @@ button { cursor: pointer; border: none; background: none; font: inherit; }
   flex-wrap: wrap;
 }
 
-/* Scroll hint */
+/* ── Indicador de progresso lateral ──
+   Mostra visualmente quanto do vídeo foi "revelado".
+   Atualizado pelo JS via --fill CSS var ou style.height.
+── */
+.hero-progress {
+  position: absolute;
+  right: 2rem;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  z-index: 6;
+  opacity: 0;
+  transition: opacity 0.6s var(--ease-luxury);
+}
+.hero-progress.is-active { opacity: 1; }
+
+.hero-progress__track {
+  width: 1px;
+  height: 80px;
+  background: rgba(250,246,242,0.2);
+  position: relative;
+  overflow: hidden;
+}
+.hero-progress__fill {
+  position: absolute;
+  bottom: 0; left: 0;
+  width: 100%;
+  height: 0%;                /* atualizado pelo JS */
+  background: var(--color-blush-light);
+  transition: height 0.08s linear;
+}
+.hero-progress__label {
+  font-family: var(--font-body);
+  font-size: 0.55rem;
+  letter-spacing: 0.1em;
+  color: rgba(250,246,242,0.45);
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+}
+
+@media (max-width: 600px) {
+  .hero-progress { display: none; }
+}
+
+/* ── Hint de scroll ── */
 .hero-scroll-hint {
   position: absolute;
   bottom: 2.5rem;
@@ -420,10 +513,12 @@ button { cursor: pointer; border: none; background: none; font: inherit; }
   flex-direction: column;
   align-items: center;
   gap: 0.75rem;
-  z-index: 2;
-  opacity: 0.55;
-  animation: fadeInUp 1.5s var(--ease-luxury) 2s both;
+  z-index: 6;
+  opacity: 0.6;
+  animation: fadeInUp 1.5s var(--ease-luxury) 1.2s both;
+  transition: opacity 0.5s var(--ease-luxury);
 }
+.hero-scroll-hint.is-hidden { opacity: 0; pointer-events: none; }
 .hero-scroll-hint span {
   font-family: var(--font-body);
   font-size: 0.6rem;
@@ -438,32 +533,38 @@ button { cursor: pointer; border: none; background: none; font: inherit; }
   animation: scrollPulse 2.5s ease-in-out infinite;
 }
 @keyframes scrollPulse {
-  0%   { transform: scaleY(0); transform-origin: top; opacity: 0; }
-  50%  { transform: scaleY(1); transform-origin: top; opacity: 1; }
+  0%   { transform: scaleY(0); transform-origin: top;    opacity: 0; }
+  50%  { transform: scaleY(1); transform-origin: top;    opacity: 1; }
   100% { transform: scaleY(0); transform-origin: bottom; opacity: 0; }
 }
 
-/* ── RED TRIGGER SENTINELS ── */
-/* Invisible dividers positioned within the scroll runway.
-   IntersectionObserver fires when each crosses the viewport.
-   They must be position:absolute inside hero-wrapper. */
+/* ── RED TRIGGER SENTINELAS ──
+   position:absolute dentro de hero-wrapper.
+   Devem ser absolutas, não fixas, para se moverem
+   com a pista e cruzarem a viewport no momento certo.
+   
+   DEV: descomente para visualizar posicionamento:
+   .red-trigger { background: rgba(255,0,0,0.4) !important; height: 4px !important; }
+── */
 .red-trigger {
   position: absolute;
   left: 0;
   width: 100%;
-  height: 1px;
+  height: 2px;
   pointer-events: none;
-  /* DEV AID: uncomment to visualize triggers during development */
-  /* background: rgba(255,0,0,0.4); */
+  /* background: rgba(255,0,0,0.5); */ /* ← DEV helper */
 }
 
-/* ── RED REVEAL ANIMATION STATES ── */
-/* Elements start hidden; JS adds .is-revealed via Red Trigger */
+/* ── ESTADOS DE ANIMAÇÃO RED REVEAL ──
+   Elementos começam invisíveis + deslocados.
+   A classe .is-revealed é adicionada pelo JS quando o
+   Red Trigger correspondente entra na viewport.
+── */
 .red-reveal {
   opacity: 0;
-  transform: translateY(28px);
-  transition: opacity 0.9s var(--ease-enter),
-              transform 0.9s var(--ease-enter);
+  transform: translateY(32px);
+  transition: opacity 1s var(--ease-enter),
+              transform 1s var(--ease-enter);
   will-change: opacity, transform;
 }
 .red-reveal.is-revealed {
@@ -1119,13 +1220,21 @@ button { cursor: pointer; border: none; background: none; font: inherit; }
 
 /* ─── Print / accessibility ──── */
 @media (prefers-reduced-motion: reduce) {
+  /* Revela todos os elementos imediatamente, sem animação */
   .red-reveal {
     opacity: 1 !important;
     transform: none !important;
     transition: none !important;
   }
-  .hero-video { display: none; }
+  /* Pausa o vídeo no primeiro frame — sem scrubbing */
+  .hero-video {
+    display: none;
+  }
   .hero-sticky {
     background: var(--color-plum);
   }
+  /* Remove animações de loop */
+  .marquee-track { animation: none; }
+  .seal-svg      { animation: none; }
+  .scroll-line   { animation: none; opacity: 0.5; }
 }
