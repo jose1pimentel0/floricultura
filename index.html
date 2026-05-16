@@ -3,417 +3,210 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Floricultura Mah — Flores de Luxo</title>
+  <title>Floricultura Mah — Flores que Falam</title>
+  <link rel="stylesheet" href="style.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Didact+Gothic&family=Cinzel:wght@400;500&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Montserrat:wght@200;300;400&display=swap" rel="stylesheet" />
 </head>
 <body>
- 
-  <!-- ═══════════════════════════════════════════════
-       NAVIGATION
-  ═══════════════════════════════════════════════ -->
+
+  <!-- ═══════════════════════════════════════════
+       NAV
+  ═══════════════════════════════════════════ -->
   <nav class="nav" id="nav">
-    <div class="nav__logo">
-      <span class="nav__logo-text">Mah</span>
-      <span class="nav__logo-sub">FLORICULTURA</span>
-    </div>
+    <a href="#" class="nav__logo">MAH</a>
     <ul class="nav__links">
-      <li><a href="#catalog">Catálogo</a></li>
-      <li><a href="#about">Atelier</a></li>
-      <li><a href="#contact">Contato</a></li>
+      <li><a href="#colecao">Coleção</a></li>
+      <li><a href="#sobre">Ateliê</a></li>
+      <li><a href="#contato">Contato</a></li>
     </ul>
-    <div class="nav__cta">
-      <a href="#catalog" class="btn-ghost">Encomende</a>
-    </div>
-    <button class="nav__hamburger" id="hamburger" aria-label="Menu">
-      <span></span><span></span><span></span>
-    </button>
+    <a href="#contato" class="nav__cta">Encomendar</a>
   </nav>
- 
-  <!-- ═══════════════════════════════════════════════
-       HERO SECTION — STICKY SCROLL
-       
-       HOW THE STICKY SCROLL WORKS:
-       The `.hero-wrapper` has a tall height (300vh) which creates
-       a long scroll "runway." Inside it, `.hero-sticky` is set to
-       `position: sticky; top: 0; height: 100vh` — this pins the
-       visual frame in place while the page scrolls beneath it.
-       
-       The JS IntersectionObserver watches invisible `.red-trigger`
-       dividers placed at intervals within the wrapper. As each
-       divider crosses the viewport threshold, it fires entrance
-       animations
-  ═══════════════════════════════════════════════ -->
-  <div class="hero-wrapper" id="hero-wrapper">
- 
-    <!-- Sticky container — stays pinned at top:0 during scroll -->
-    <div class="hero-sticky" id="hero-sticky">
- 
-      <!-- Video container — swap src for FFMPEG-optimized .mp4 -->
-      <div class="hero-video-container">
+
+  <!-- ═══════════════════════════════════════════
+       HERO — SCROLL-DRIVEN VIDEO SECTION
+       Antigravity Architecture:
+         · .hero__pin-spacer  → tall scroll canvas (300vh)
+         · .hero__sticky      → sticky viewport lock
+         · #red-trigger       → IntersectionObserver sensor
+         · video              → currentTime mapped to scroll
+  ═══════════════════════════════════════════ -->
+  <section class="hero" id="hero">
+
+    <!-- Invisible sensor: when it enters the viewport,
+         the scroll-to-video sync activates -->
+    <div id="red-trigger" aria-hidden="true"></div>
+
+    <!-- Tall spacer that gives the scroll canvas its height -->
+    <div class="hero__pin-spacer">
+
+      <!-- Sticky container — freezes in place while user scrolls -->
+      <div class="hero__sticky">
+
+        <!-- Video layer -->
         <video
-          class="hero-video"
+          class="hero__video"
           id="hero-video"
-          autoplay
+          src="lirio-video.mp4"
           muted
-          loop
           playsinline
           preload="auto"
-          poster="poster.jpg"
-          aria-label="Lírios em movimento suave"
-        >
-          <!--
-            FFMPEG INTEGRATION NOTE:
-            Replace the src below with your optimized video file.
-            Recommended FFMPEG command for web-optimized output:
-            
-            ffmpeg -i input.mp4 \
-              -vf "scale=1920:-2,fps=24" \
-              -c:v libx264 -crf 23 -preset slow \
-              -profile:v high -level 4.0 \
-              -movflags +faststart \
-              -an output.mp4
-            
-            Also generate a WebM fallback:
-            ffmpeg -i input.mp4 \
-              -vf "scale=1920:-2,fps=24" \
-              -c:v libvpx-vp9 -crf 33 -b:v 0 \
-              -an output.webm
-          -->
-          <source src="hero-lily.webm" type="video/webm" />
-          <source src="hero-lily.mp4" type="video/mp4" />
-        </video>
- 
-        <!-- Multi-layer gradient overlay for text legibility -->
-        <div class="hero-overlay"></div>
- 
-        <!-- Decorative botanical line art -->
-        <div class="hero-ornament hero-ornament--left" aria-hidden="true">
-          <svg viewBox="0 0 60 400" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <line x1="30" y1="0" x2="30" y2="400" stroke="rgba(255,245,240,0.25)" stroke-width="0.5"/>
-            <ellipse cx="30" cy="100" rx="18" ry="8" stroke="rgba(255,245,240,0.2)" stroke-width="0.5" transform="rotate(-20 30 100)"/>
-            <ellipse cx="30" cy="200" rx="14" ry="6" stroke="rgba(255,245,240,0.15)" stroke-width="0.5" transform="rotate(15 30 200)"/>
-            <ellipse cx="30" cy="300" rx="16" ry="7" stroke="rgba(255,245,240,0.2)" stroke-width="0.5" transform="rotate(-10 30 300)"/>
-          </svg>
-        </div>
-        <div class="hero-ornament hero-ornament--right" aria-hidden="true">
-          <svg viewBox="0 0 60 400" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <line x1="30" y1="0" x2="30" y2="400" stroke="rgba(255,245,240,0.25)" stroke-width="0.5"/>
-            <ellipse cx="30" cy="150" rx="16" ry="7" stroke="rgba(255,245,240,0.2)" stroke-width="0.5" transform="rotate(20 30 150)"/>
-            <ellipse cx="30" cy="260" rx="18" ry="8" stroke="rgba(255,245,240,0.15)" stroke-width="0.5" transform="rotate(-15 30 260)"/>
-          </svg>
-        </div>
- 
-      </div><!-- /hero-video-container -->
- 
-      <!-- Hero content layers — each animated by Red Trigger -->
-      <div class="hero-content" id="hero-content">
- 
-        <!-- Layer 1: eyebrow (triggered first) -->
-        <p class="hero-eyebrow red-reveal" id="hero-eyebrow">
-          <span class="eyebrow-line"></span>
-          Atelier de Flores Premium
-          <span class="eyebrow-line"></span>
-        </p>
- 
-        <!-- Layer 2: main headline (triggered second) -->
-        <h1 class="hero-headline red-reveal" id="hero-headline">
-          <span class="headline-line">A Beleza</span>
-          <em class="headline-italic">que perdura</em>
-        </h1>
- 
-        <!-- Layer 3: subtext (triggered third) -->
-        <p class="hero-sub red-reveal" id="hero-sub">
-          Arranjos florais de luxo, criados com precisão artesanal<br />
-          para momentos que merecem ser imortalizados.
-        </p>
- 
-        <!-- Layer 4: CTA (triggered fourth) -->
-        <div class="hero-cta red-reveal" id="hero-cta">
-          <a href="#catalog" class="btn-primary">Explorar Coleção</a>
-          <a href="#about" class="btn-text">Nosso Atelier ↓</a>
-        </div>
- 
-      </div><!-- /hero-content -->
+          aria-hidden="true"
+        ></video>
 
+        <!-- Gradient overlay for typography legibility -->
+        <div class="hero__overlay" aria-hidden="true"></div>
 
-      <!-- Scroll indicator -->
-      <div class="hero-scroll-hint" aria-hidden="true">
-        <span>Role para descobrir</span>
-        <div class="scroll-line"></div>
-      </div>
-      
-    
-    <!-- /hero-sticky -->
- 
-    <!-- ═══════════════════════════════════════════════
-         RED TRIGGER DIVIDERS
-         
-         These invisible sentinel elements are positioned at
-         equal intervals throughout the hero-wrapper's scroll
-         runway. The IntersectionObserver in script.js watches
-         them. When each crosses the 10% threshold of the
-         viewport, it dispatches a custom event that animates
-         the corresponding hero content layer.
-         
-         The name "Red Trigger" refers to the invisible trigger
-         points — place as many as needed, naming them by index.
-    ═══════════════════════════════════════════════ -->
-    <div class="red-trigger" data-target="hero-eyebrow" data-delay="0"    style="top: 5vh"   aria-hidden="true"></div>
-    <div class="red-trigger" data-target="hero-headline" data-delay="150" style="top: 25vh"  aria-hidden="true"></div>
-    <div class="red-trigger" data-target="hero-sub"      data-delay="300" style="top: 50vh"  aria-hidden="true"></div>
-    <div class="red-trigger" data-target="hero-cta"      data-delay="450" style="top: 75vh"  aria-hidden="true"></div>
- 
-  </div><!-- /hero-wrapper -->
- 
- 
-  <!-- ═══════════════════════════════════════════════
-       MARQUEE STRIP
-  ═══════════════════════════════════════════════ -->
-  <div class="marquee-strip" aria-hidden="true">
-    <div class="marquee-track">
-      <span>Lírios</span><span class="dot">·</span>
-      <span>Botânica Fina</span><span class="dot">·</span>
-      <span>Arte Floral</span><span class="dot">·</span>
-      <span>Luxo Natural</span><span class="dot">·</span>
-      <span>Entrega Exclusiva</span><span class="dot">·</span>
-      <span>Lírios</span><span class="dot">·</span>
-      <span>Botânica Fina</span><span class="dot">·</span>
-      <span>Arte Floral</span><span class="dot">·</span>
-      <span>Luxo Natural</span><span class="dot">·</span>
-      <span>Entrega Exclusiva</span><span class="dot">·</span>
-      <!-- Duplicate for seamless loop -->
-      <span>Lírios</span><span class="dot">·</span>
-      <span>Botânica Fina</span><span class="dot">·</span>
-      <span>Arte Floral</span><span class="dot">·</span>
-      <span>Luxo Natural</span><span class="dot">·</span>
-      <span>Entrega Exclusiva</span><span class="dot">·</span>
-      <span>Lírios</span><span class="dot">·</span>
-      <span>Botânica Fina</span><span class="dot">·</span>
-      <span>Arte Floral</span><span class="dot">·</span>
-    </div>
+        <!-- Editorial typography -->
+        <div class="hero__content">
+          <p class="hero__eyebrow">Floricultura Mah — Edição 2025</p>
+
+          <h1 class="hero__title">
+            <span class="hero__title-line">A Flor</span>
+            <span class="hero__title-line hero__title-line--italic">que</span>
+            <span class="hero__title-line">Permanece</span>
+          </h1>
+
+          <p class="hero__descriptor">
+            Arranjos concebidos como objetos de memória.<br />
+            Cada pétala, uma intenção.
+          </p>
+
+          <div class="hero__scroll-cue" id="scroll-cue">
+            <span class="hero__scroll-cue-text">Role para revelar</span>
+            <span class="hero__scroll-cue-line"></span>
+          </div>
+        </div>
+
+        <!-- Scroll progress bar -->
+        <div class="hero__progress" id="hero-progress" aria-hidden="true">
+          <div class="hero__progress-fill" id="hero-progress-fill"></div>
+        </div>
+
+      </div><!-- /.hero__sticky -->
+    </div><!-- /.hero__pin-spacer -->
+  </section><!-- /.hero -->
+
+  <!-- ═══════════════════════════════════════════
+       TRANSITION BRIDGE — seamless cut from hero
+  ═══════════════════════════════════════════ -->
+  <div class="bridge" aria-hidden="true">
+    <div class="bridge__fade"></div>
   </div>
- 
- 
-  <!-- ═══════════════════════════════════════════════
-       CATALOG SECTION
-  ═══════════════════════════════════════════════ -->
-  <section class="catalog" id="catalog">
- 
-    <div class="catalog__header">
-      <p class="section-label">Coleção Exclusiva</p>
-      <h2 class="section-title">Flores Selecionadas</h2>
-      <p class="section-sub">Cada espécie cultivada com atenção singular à qualidade e longevidade.</p>
+
+  <!-- ═══════════════════════════════════════════
+       COLLECTION SECTION
+  ═══════════════════════════════════════════ -->
+  <section class="colecao" id="colecao">
+    <div class="colecao__header">
+      <span class="section-label">Coleção</span>
+      <h2 class="colecao__title">Flores que<br /><em>contam histórias</em></h2>
     </div>
- 
-    <div class="catalog__grid">
- 
-      <!-- ─── LILY — AVAILABLE ─────────────────── -->
-      <article class="card card--available" tabindex="0">
-        <div class="card__media">
-          <!-- Placeholder: replace with actual product image -->
-          <div class="card__img-placeholder card__img-placeholder--lily" role="img" aria-label="Lírios brancos frescos">
-            <div class="placeholder-icon">❀</div>
-          </div>
-          <div class="card__media-overlay"></div>
-          <div class="card__badge card__badge--new">Disponível</div>
+
+    <div class="colecao__grid">
+      <article class="card card--large">
+        <div class="card__img-wrap">
+          <div class="card__img-placeholder"></div>
         </div>
         <div class="card__body">
-          <p class="card__genus">Lilium</p>
-          <h3 class="card__name">Lírios</h3>
-          <p class="card__desc">
-            Orientais e asiáticos, frescos da estufa. Disponíveis em branco puro, rosa suave e burgundy.
-          </p>
-          <div class="card__footer">
-            <div class="card__price">
-              <span class="price-from">a partir de</span>
-              <span class="price-value">R$ 280</span>
-            </div>
-            <button class="btn-card" aria-label="Encomendar Lírios">Encomendar</button>
-          </div>
+          <span class="card__label">01 — Lírios</span>
+          <h3 class="card__title">Pureza<br />Absoluta</h3>
+          <p class="card__text">Composições em branco total, para momentos que pedem silêncio e elegância.</p>
+          <a href="#" class="card__link">Ver arranjos →</a>
         </div>
       </article>
- 
-      <!-- ─── TULIP — OUT OF STOCK ──────────────── -->
-      <article class="card card--oos" tabindex="0" aria-label="Tulipas — fora de estoque">
-        <div class="card__media">
-          <div class="card__img-placeholder card__img-placeholder--tulip" role="img" aria-label="Tulipas">
-            <div class="placeholder-icon">✿</div>
-          </div>
-          <div class="card__media-overlay"></div>
-          <div class="card__oos-seal" aria-hidden="true">
-            <svg viewBox="0 0 120 120" class="seal-svg">
-              <path id="seal-circle-tulip" d="M60,10 a50,50 0 1,1 -0.1,0 Z" fill="none"/>
-              <text class="seal-text">
-                <textPath href="#seal-circle-tulip" startOffset="0%">
-                  · FORA DE ESTOQUE · FORA DE ESTOQUE · 
-                </textPath>
-              </text>
-            </svg>
-            <span class="seal-center">✦</span>
-          </div>
+
+      <article class="card card--small">
+        <div class="card__img-wrap">
+          <div class="card__img-placeholder card__img-placeholder--warm"></div>
         </div>
         <div class="card__body">
-          <p class="card__genus">Tulipa</p>
-          <h3 class="card__name">Tulipas</h3>
-          <p class="card__desc">
-            Importadas da Holanda, disponíveis sazonalmente em paleta monocromática ou multicolorida.
-          </p>
-          <div class="card__footer">
-            <div class="card__price card__price--oos">
-              <span class="price-oos">Indisponível</span>
-            </div>
-            <button class="btn-card btn-card--notify" aria-label="Notificar quando Tulipas estiverem disponíveis">Avisar-me</button>
-          </div>
+          <span class="card__label">02 — Rosas</span>
+          <h3 class="card__title">Amor<br />Cultivado</h3>
+          <a href="#" class="card__link">Ver arranjos →</a>
         </div>
       </article>
- 
-      <!-- ─── ROSES — OUT OF STOCK ──────────────── -->
-      <article class="card card--oos" tabindex="0" aria-label="Rosas — fora de estoque">
-        <div class="card__media">
-          <div class="card__img-placeholder card__img-placeholder--rose" role="img" aria-label="Rosas vermelhas">
-            <div class="placeholder-icon">✾</div>
-          </div>
-          <div class="card__media-overlay"></div>
-          <div class="card__oos-seal" aria-hidden="true">
-            <svg viewBox="0 0 120 120" class="seal-svg">
-              <path id="seal-circle-rose" d="M60,10 a50,50 0 1,1 -0.1,0 Z" fill="none"/>
-              <text class="seal-text">
-                <textPath href="#seal-circle-rose" startOffset="0%">
-                  · FORA DE ESTOQUE · FORA DE ESTOQUE · 
-                </textPath>
-              </text>
-            </svg>
-            <span class="seal-center">✦</span>
-          </div>
+
+      <article class="card card--small">
+        <div class="card__img-wrap">
+          <div class="card__img-placeholder card__img-placeholder--sage"></div>
         </div>
         <div class="card__body">
-          <p class="card__genus">Rosa</p>
-          <h3 class="card__name">Rosas</h3>
-          <p class="card__desc">
-            Rosas de caule longo e pétalas densas. Colhidas ao alvorecer para máxima frescura e durabilidade.
-          </p>
-          <div class="card__footer">
-            <div class="card__price card__price--oos">
-              <span class="price-oos">Indisponível</span>
-            </div>
-            <button class="btn-card btn-card--notify" aria-label="Notificar quando Rosas estiverem disponíveis">Avisar-me</button>
-          </div>
+          <span class="card__label">03 — Silvestres</span>
+          <h3 class="card__title">Natureza<br />Bruta</h3>
+          <a href="#" class="card__link">Ver arranjos →</a>
         </div>
       </article>
- 
-      <!-- ─── SUNFLOWERS — OUT OF STOCK ─────────── -->
-      <article class="card card--oos" tabindex="0" aria-label="Girassóis — fora de estoque">
-        <div class="card__media">
-          <div class="card__img-placeholder card__img-placeholder--sunflower" role="img" aria-label="Girassóis">
-            <div class="placeholder-icon">✺</div>
+
+      <article class="card card--full">
+        <div class="card__body card__body--horizontal">
+          <div>
+            <span class="card__label">04 — Encomendas</span>
+            <h3 class="card__title">Para cada<br /><em>momento único</em></h3>
           </div>
-          <div class="card__media-overlay"></div>
-          <div class="card__oos-seal" aria-hidden="true">
-            <svg viewBox="0 0 120 120" class="seal-svg">
-              <path id="seal-circle-sf" d="M60,10 a50,50 0 1,1 -0.1,0 Z" fill="none"/>
-              <text class="seal-text">
-                <textPath href="#seal-circle-sf" startOffset="0%">
-                  · FORA DE ESTOQUE · FORA DE ESTOQUE · 
-                </textPath>
-              </text>
-            </svg>
-            <span class="seal-center">✦</span>
-          </div>
-        </div>
-        <div class="card__body">
-          <p class="card__genus">Helianthus</p>
-          <h3 class="card__name">Girassóis</h3>
-          <p class="card__desc">
-            Girassóis artesanais de grandes corolas, ideais para composições alegres e ambientes amplos.
-          </p>
-          <div class="card__footer">
-            <div class="card__price card__price--oos">
-              <span class="price-oos">Indisponível</span>
-            </div>
-            <button class="btn-card btn-card--notify" aria-label="Notificar quando Girassóis estiverem disponíveis">Avisar-me</button>
-          </div>
+          <p class="card__text">Criamos arranjos personalizados para casamentos, eventos corporativos e presenteios especiais. Cada projeto é desenvolvido em parceria com o cliente.</p>
+          <a href="#contato" class="btn">Iniciar projeto</a>
         </div>
       </article>
- 
-    </div><!-- /catalog__grid -->
- 
+    </div>
   </section>
- 
- 
-  <!-- ═══════════════════════════════════════════════
-       ATELIER / ABOUT SECTION
-  ═══════════════════════════════════════════════ -->
-  <section class="atelier" id="about">
-    <div class="atelier__inner">
-      <div class="atelier__text">
-        <p class="section-label">Nosso Atelier</p>
-        <h2 class="atelier__title">Flores como expressão de requinte</h2>
-        <p class="atelier__body">
-          Na Floricultura Mah, cada arranjo nasce de uma filosofia singular: a flor não decora —
-          ela transforma. Trabalhamos com espécies raras e cultivares selecionadas, entregues
-          diretamente das estufas para sua residência ou evento, com cuidado de ateliê.
-        </p>
-        <p class="atelier__body">
-          Nossos consultores florais atendem individualmente para criar peças sob medida,
-          alinhadas à estética e ao momento de cada cliente.
-        </p>
-        <a href="#contact" class="btn-primary btn-primary--dark">Agendar Consulta</a>
+
+  <!-- ═══════════════════════════════════════════
+       SOBRE / ATELIÊ
+  ═══════════════════════════════════════════ -->
+  <section class="sobre" id="sobre">
+    <div class="sobre__inner">
+      <div class="sobre__text">
+        <span class="section-label">Ateliê</span>
+        <h2 class="sobre__title">Flores são<br /><em>arquitetura efêmera</em></h2>
+        <p>No ateliê Mah, cada arranjo é tratado como uma peça de design. Trabalhamos com flores de estação, respeitando os ciclos da natureza e o tempo de cada flor.</p>
+        <p>Fundada em 2017, a Floricultura Mah construiu uma linguagem visual própria — limpa, poética, e sempre surpreendente.</p>
+        <a href="#contato" class="btn btn--outline">Conhecer o ateliê →</a>
       </div>
-      <div class="atelier__visual">
-        <div class="atelier__frame">
-          <div class="atelier__img-placeholder" role="img" aria-label="Atelier Floricultura Mah">
-            <span class="atelier-icon">❀</span>
-          </div>
-          <div class="atelier__quote">
-            <blockquote>
-              "Uma flor não escolhe onde floresce — escolhemos nós, para você."
-            </blockquote>
-            <cite>— Equipe Mah</cite>
-          </div>
+      <div class="sobre__visual">
+        <div class="sobre__img-block"></div>
+        <div class="sobre__quote">
+          <blockquote>"Uma flor não precisa de motivo para ser bela."</blockquote>
+          <cite>— Mah Oliveira, fundadora</cite>
         </div>
       </div>
     </div>
   </section>
- 
- 
-  <!-- ═══════════════════════════════════════════════
-       CONTACT / FOOTER
-  ═══════════════════════════════════════════════ -->
-  <footer class="footer" id="contact">
-    <div class="footer__inner">
-      <div class="footer__brand">
-        <div class="footer__logo">
-          <span class="nav__logo-text">Mah</span>
-          <span class="nav__logo-sub">FLORICULTURA</span>
-        </div>
-        <p class="footer__tagline">Arte floral de luxo,<br />entregue com distinção.</p>
-      </div>
- 
-      <div class="footer__contact">
-        <p class="footer__label">Contato</p>
-        <a href="tel:+5511999999999" class="footer__link">(11) 9 9999-9999</a>
-        <a href="mailto:atendimento@floriculturemah.com.br" class="footer__link">atendimento@floriculturemah.com.br</a>
-        <p class="footer__address">São Paulo, SP · Atendimento por agendamento</p>
-      </div>
- 
-      <div class="footer__social">
-        <p class="footer__label">Instagram</p>
-        <a href="#" class="footer__link footer__link--ig">@floriculturemah</a>
-        <p class="footer__label" style="margin-top:1.5rem">Horário</p>
-        <p class="footer__hours">Seg–Sex: 9h–18h<br />Sáb: 9h–14h</p>
+
+  <!-- ═══════════════════════════════════════════
+       CONTATO
+  ═══════════════════════════════════════════ -->
+  <section class="contato" id="contato">
+    <div class="contato__inner">
+      <span class="section-label">Contato</span>
+      <h2 class="contato__title">Vamos criar<br /><em>algo juntos?</em></h2>
+      <div class="contato__channels">
+        <a href="https://wa.me/5511999999999" class="contato__channel">
+          <span class="contato__channel-label">WhatsApp</span>
+          <span class="contato__channel-value">(11) 99999-9999</span>
+        </a>
+        <a href="mailto:ola@floriculturamah.com.br" class="contato__channel">
+          <span class="contato__channel-label">E-mail</span>
+          <span class="contato__channel-value">ola@floriculturamah.com.br</span>
+        </a>
+        <a href="https://instagram.com/floriculturamah" class="contato__channel">
+          <span class="contato__channel-label">Instagram</span>
+          <span class="contato__channel-value">@floriculturamah</span>
+        </a>
       </div>
     </div>
- 
-    <div class="footer__bottom">
-      <p>© 2025 Floricultura Mah. Todos os direitos reservados.</p>
-      <p>Desenvolvido com atenção ao detalhe.</p>
-    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════
+       FOOTER
+  ═══════════════════════════════════════════ -->
+  <footer class="footer">
+    <p class="footer__logo">MAH</p>
+    <p class="footer__copy">© 2025 Floricultura Mah. Todos os direitos reservados.</p>
+    <p class="footer__tagline">Flores que falam.</p>
   </footer>
- 
- 
+
   <script src="script.js"></script>
 </body>
 </html>
